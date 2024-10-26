@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatMemory Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<section class="section">
+    <div class="container">
+        <h1 class="title">ChatMemory Demo</h1>
+        <div class="box" id="chat-box">
+            <div id="chat-history" style="height: 500px; overflow-y: scroll;">
+                <!-- Chat messages will be displayed here -->
+            </div>
+            <div class="field is-grouped mt-3">
+                <div class="control is-expanded">
+                    <input class="input" type="text" id="user-input" placeholder="Enter your message...">
+                </div>
+                <div class="control">
+                    <button class="button is-primary" id="send-button">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    $(document).ready(function() {
+        // Function to append a message to the chat history
+        function appendMessage(role, content) {
+            let messageClass = role === 'user' ? 'has-text-right' : 'has-text-left';
+            let messageColor = role === 'user' ? 'has-text-info' : 'has-text-success';
+            $('#chat-history').append(
+                `<div class="notification ${messageColor} ${messageClass}">
+                        <p>${content}</p>
+                    </div>`
+            );
+            //When a new message arrives, it automatically scrolls to the bottom
+            $('#chat-history').scrollTop($('#chat-history')[0].scrollHeight);
+        }
+
+        // Handle send button click
+        $('#send-button').click(function() {
+            let userInput = $('#user-input').val().trim(); // get input
+            if (userInput !== '') {
+                appendMessage('user', userInput);
+                $('#user-input').val('');
+
+                // Send request to the server
+                $.ajax({
+                    url: '/chat/chat-memory',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        model: 'gpt-4o',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: userInput
+                            }
+                        ]
+                    }),
+                    success: function(response) {
+                        let assistantResponse = response.choices[0].message.content;
+                        appendMessage('assistant', assistantResponse);
+                    },
+                    error: function(xhr) {
+                        appendMessage('assistant', 'Error: ' + xhr.responseText);
+                    }
+                });
+            }
+        });
+
+        // Allow enter key to send message
+        $('#user-input').keypress(function(e) {
+            if (e.which === 13) {
+                $('#send-button').click();
+            }
+        });
+    });
+</script>
+</body>
+</html>
